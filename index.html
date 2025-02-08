@@ -1,0 +1,167 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Dexter Advanced Web Deployer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"></link>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .fade-in {
+            animation: fadeIn 2s ease-in-out;
+        }
+        @keyframes jump {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        .jump {
+            animation: jump 1s infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center relative">
+    <img src="https://ik.imagekit.io/h3vptf9da/a%20man%20in%20a%20hooded%20suit%20hold....jpg?updatedAt=1738972465209" alt="A man in a hooded suit holding a laptop with a dark, cyber-themed background" class="absolute inset-0 w-full h-full object-cover z-0">
+    <div class="bg-gray-900 bg-opacity-80 rounded-2xl p-8 w-full max-w-md shadow-lg transform transition-transform duration-500 hover:rotate-0 hover:shadow-2xl z-10 fade-in">
+        <h1 class="text-2xl text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-blue-500 mb-6 jump">
+            <i class="fas fa-cloud-upload-alt"></i> CYBER DEXTER WEB DEPLOY
+        </h1>
+        
+        <form id="deploy-form">
+            <div class="mb-4 relative">
+                <i class="fas fa-file-archive absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-500"></i>
+                <label class="block text-white mb-2">ZIP ෆයිල් තෝරන්න</label>
+                <input type="file" id="zip-file" accept=".zip" required class="w-full p-3 pl-12 border-2 border-gray-700 rounded-lg bg-gray-800 text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="mb-4 relative">
+                <i class="fab fa-github absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-500"></i>
+                <label class="block text-white mb-2">GitHub Repository නම</label>
+                <input type="text" id="repo-name" placeholder="e.g. my-awesome-website" required class="w-full p-3 pl-12 border-2 border-gray-700 rounded-lg bg-gray-800 text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="mb-4 relative">
+                <i class="fab fa-whatsapp absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-500"></i>
+                <label class="block text-white mb-2">WhatsApp අංකය</label>
+                <input type="tel" id="whatsapp-number" placeholder="e.g. 94759096416" required class="w-full p-3 pl-12 border-2 border-gray-700 rounded-lg bg-gray-800 text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <button type="submit" class="w-full p-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:shadow-lg transform transition-transform duration-300 hover:-translate-y-1">
+                <i class="fas fa-rocket"></i> වෙබ් සයිට් Deploy කරන්න
+            </button>
+        </form>
+
+        <div class="loading mt-6 text-center hidden" id="loading">
+            <div class="spinner border-4 border-t-4 border-t-blue-500 w-12 h-12 rounded-full animate-spin mx-auto"></div>
+            <p class="text-white mt-2">Processing... කරුණාකර රැඳී සිටින්න...</p>
+        </div>
+
+        <div class="result mt-6 bg-gray-800 p-4 rounded-lg text-center hidden" id="result">
+            <h3 class="text-green-500 text-lg">✅ Deploy සාර්ථකයි!</h3>
+            <p class="text-white">GitHub Pages URL: <a href="#" id="github-link" target="_blank" class="text-blue-400 underline"></a></p>
+            <p class="text-white">WhatsApp දැනුම් දීම: <span id="whatsapp-status">යවමින් පවතී...</span></p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script>
+        const GITHUB_TOKEN = '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';
+
+        document.getElementById('deploy-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const githubLink = document.getElementById('github-link');
+            const whatsappStatus = document.getElementById('whatsapp-status');
+
+            loading.classList.remove('hidden');
+            result.classList.add('hidden');
+
+            const zipFile = document.getElementById('zip-file').files[0];
+            const repoName = document.getElementById('repo-name').value;
+            const whatsappNumber = document.getElementById('whatsapp-number').value;
+
+            try {
+                // Repository Creation
+                const repoResponse = await fetch('https://api.github.com/user/repos', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `token ${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}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: repoName,
+                        private: false,
+                    }),
+                });
+
+                const repoData = await repoResponse.json();
+
+                // ZIP File Processing
+                const zip = new JSZip();
+                const content = await zip.loadAsync(zipFile);
+
+                // File Upload
+                for (const path in content.files) {
+                    const file = content.files[path];
+                    if (!file.dir) {
+                        const fileContent = await file.async('base64');
+                        const fileName = path.split('/').pop();
+
+                        await fetch(`https://api.github.com/repos/${repoData.owner.login}/${repoName}/contents/${fileName}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `token ${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}`,
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                message: `Add ${fileName}`,
+                                content: fileContent,
+                                branch: 'gh-pages',
+                            }),
+                        });
+                    }
+                }
+
+                // Enable GitHub Pages
+                await fetch(`https://api.github.com/repos/${repoData.owner.login}/${repoName}/pages`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `token ${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}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        source: {
+                            branch: 'gh-pages',
+                            path: '/'
+                        }
+                    })
+                });
+
+                // GitHub Pages URL
+                const githubPageUrl = `https://${repoData.owner.login}.github.io/${repoName}/`;
+                
+                // WhatsApp Notification
+                const whatsappResponse = await fetch(
+                    `https://dexter-whatsapp-bot-request.onrender.com/send-message?number=${whatsappNumber}&message=${encodeURIComponent(`🚀 Your website is live: ${githubPageUrl}`)}`
+                );
+
+                loading.classList.add('hidden');
+                result.classList.remove('hidden');
+                
+                githubLink.href = githubPageUrl;
+                githubLink.textContent = githubPageUrl;
+                whatsappStatus.textContent = whatsappResponse.ok ? '✅ සාර්ථකව යවන දී' : '❌ යැවීමේ දෝෂයක්';
+
+            } catch (error) {
+                console.error(error);
+                loading.classList.add('hidden');
+                alert('දෝෂයක් සිදු විය. කරුණාකර නැවත උත්සාහ කරන්න.');
+            }
+        });
+    </script>
+</body>
+</html>
