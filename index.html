@@ -89,7 +89,7 @@
                 const repoResponse = await fetch('https://api.github.com/user/repos', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `token ${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}`,
+                        'Authorization': `token ${GITHUB_TOKEN}`,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
